@@ -59,7 +59,7 @@ void Client::callbackFunction(const ix::WebSocketMessagePtr& msg) {
 	// Set atomic variable that websocket is connected once it is open.
 	if (msg->type == ix::WebSocketMessageType::Open) {
 		wsConnected = 1;
-		wsConnected.notify_all();
+		condWs.notify_all();
 	}
 	
 	// Set atomic variable that websocket is not connected if socket closes.
@@ -145,8 +145,10 @@ void Client::sendMessage(json msg, mhl::MessageTypes mType) {
 	}
 	// If started, wait for the socket to connect first.
 	if (!wsConnected && isConnecting) {
+		std::unique_lock<std::mutex> lock{msgMx};
 		std::DBOUT << "Waiting for socket to connect" << std::endl;
-		wsConnected.wait(0);
+		auto wsConnStatus = [this]() {return wsConnected == 1; };
+		condWs.wait(lock, wsConnStatus);
 		std::cout << "Connected to socket" << std::endl;
 		//webSocket.send(msg.dump());
 	}
@@ -159,7 +161,9 @@ void Client::sendMessage(json msg, mhl::MessageTypes mType) {
 			std::cout << "Started connection to client" << std::endl;
 			return;
 		}
-		clientConnected.wait(0);
+		std::unique_lock<std::mutex> lock{msgMx};
+		auto clientConnStatus = [this]() {return clientConnected == 1; };
+		condClient.wait(lock, clientConnStatus);
 		std::cout << "Connected to client" << std::endl;
 		webSocket.send(msg.dump());
 	}
@@ -256,7 +260,7 @@ void Client::messageHandling() {
 			if (messageHandler.messageType == mhl::MessageTypes::ServerInfo) {
 				isConnecting = 0;
 				clientConnected = 1;
-				clientConnected.notify_all();
+				condClient.notify_all();
 			}
 			// If a device updated message, make sure to update the devices for the user.
 			if (messageHandler.messageType == mhl::MessageTypes::DeviceAdded ||

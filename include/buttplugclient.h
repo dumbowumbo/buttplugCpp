@@ -37,6 +37,9 @@ public:
 	std::atomic<int> wsConnected = 0;
 	std::atomic<int> isConnecting = 0;
 	std::atomic<int> clientConnected = 0;
+	// Condition variables for the atomics, we want C++11 support
+	std::condition_variable condClient;
+	std::condition_variable condWs;
 
 	// Public functions that send requests to server.
 	void startScan();

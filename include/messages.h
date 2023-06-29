@@ -97,6 +97,23 @@ namespace msg {
 		std::vector<Scalar> Scalars;
 	};
 
+	class SensorReadCmd {
+	public:
+		unsigned int Id = 1;
+		unsigned int DeviceIndex;
+		unsigned int SensorIndex;
+		std::string SensorType;
+	};
+
+	class SensorReading {
+	public:
+		unsigned int Id = 1;
+		unsigned int DeviceIndex;
+		unsigned int SensorIndex;
+		std::string SensorType;
+		std::vector<int> Data;
+	};
+
 	extern void to_json(json& j, const RequestServerInfo& k);
 	extern void to_json(json& j, const StartScanning& k);
 	extern void to_json(json& j, const StopScanning& k);
@@ -104,8 +121,10 @@ namespace msg {
 	extern void to_json(json& j, const StopDeviceCmd& k);
 	extern void to_json(json& j, const StopAllDevices& k);
 	extern void to_json(json& j, const ScalarCmd& k);
+	extern void to_json(json& j, const SensorReadCmd& k);
 	extern void from_json(const json& j, ServerInfo& k);
 	extern void from_json(const json& j, DeviceList& k);
 	extern void from_json(const json& j, DeviceAdded& k);
 	extern void from_json(const json& j, DeviceRemoved& k);
+	extern void from_json(const json& j, SensorReading& k);
 }

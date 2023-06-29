@@ -19,6 +19,9 @@ void callbackFunction(const mhl::Messages msg) {
 	if (msg.messageType == mhl::MessageTypes::DeviceRemoved) {
 		cout << "Device Removed callback" << endl;
 	}
+	if (msg.messageType == mhl::MessageTypes::SensorReading) {
+		cout << "Sensor Reading callback" << endl;
+	}
 }
 
 int main()
@@ -35,7 +38,11 @@ int main()
 	}
 
 	std::vector<DeviceClass> myDevices = client.getDevices();
-	client.sendScalar(myDevices[0], 0.5);
+	//client.sendScalar(myDevices[0], 0.5);
+	//client.sendScalar(myDevices[1], 0.5);
+	client.sensorRead(myDevices[1], 0);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	client.stopAllDevices();
 	std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
 	return 0;

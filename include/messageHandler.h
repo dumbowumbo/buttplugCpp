@@ -34,8 +34,6 @@ namespace mhl {
 	// Class for request messages.
 	class Requests {
 	public:
-		msg::Ok ok;
-		msg::Error error;
 		msg::RequestServerInfo requestServerInfo;
 		msg::StartScanning startScanning;
 		msg::StopScanning stopScanning;
@@ -45,6 +43,7 @@ namespace mhl {
 		msg::StopDeviceCmd stopDeviceCmd;
 		msg::StopAllDevices stopAllDevices;
 		msg::ScalarCmd scalarCmd;
+		msg::SensorReadCmd sensorReadCmd;
 	};
 
 	// Class for messages received and for handling all types of messages.
@@ -78,10 +77,13 @@ namespace mhl {
 			{MessageTypes::SensorUnsubscribeCmd, "SensorUnsubscribeCmd"}
 		};
 
+		msg::Ok ok;
+		msg::Error error;
 		msg::ServerInfo serverInfo;
 		msg::DeviceList deviceList;
 		msg::DeviceAdded deviceAdded;
 		msg::DeviceRemoved deviceRemoved;
+		msg::SensorReading sensorReading;
 
 		// Both server message and requests are handled in this class.
 		void handleServerMessage(json& msg);

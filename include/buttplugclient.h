@@ -45,7 +45,10 @@ public:
 	void startScan();
 	void stopScan();
 	void requestDeviceList();
+	void stopDevice(DeviceClass dev);
+	void stopAllDevices();
 	void sendScalar(DeviceClass dev, double str);
+	void sensorRead(DeviceClass dev, int senIndex);
 
 	// Mutex blocked function which grabs the currently connected devices.
 	std::vector<DeviceClass> getDevices();

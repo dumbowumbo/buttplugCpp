@@ -18,6 +18,14 @@ namespace msg {
 		j["RequestDeviceList"] = { {"Id", k.Id} };
 	}
 
+	void to_json(json& j, const StopDeviceCmd& k) {
+		j["StopDeviceCmd"] = { {"Id", k.Id}, {"DeviceIndex", k.DeviceIndex} };
+	}
+
+	void to_json(json& j, const StopAllDevices& k) {
+		j["StopAllDevices"] = { {"Id", k.Id} };
+	}
+
 	void to_json(json& j, const ScalarCmd& k) {
 		j["ScalarCmd"] = { {"Id", k.Id}, {"DeviceIndex", k.DeviceIndex} };
 		j["ScalarCmd"]["Scalars"] = json::array();
@@ -26,6 +34,10 @@ namespace msg {
 			json jTemp = { { "Index", vec.Index }, { "Scalar", vec.ScalarVal }, { "ActuatorType", vec.ActuatorType } };
 			j["ScalarCmd"]["Scalars"].insert(j["ScalarCmd"]["Scalars"].end(), jTemp);
 		}
+	}
+
+	void to_json(json& j, const SensorReadCmd& k) {
+		j["SensorReadCmd"] = { {"Id", k.Id}, {"DeviceIndex", k.DeviceIndex}, {"SensorIndex", k.SensorIndex}, {"SensorType", k.SensorType}};
 	}
 
 	void from_json(const json& j, ServerInfo& k) {
@@ -169,5 +181,16 @@ namespace msg {
 				k.device.DeviceMessages.push_back(tempCmd);
 			}
 		}
+	}
+
+	void from_json(const json& j, SensorReading& k) {
+		json jTemp;
+		j.at("SensorReading").get_to(jTemp);
+		jTemp.at("Id").get_to(k.Id);
+		jTemp.at("DeviceIndex").get_to(k.DeviceIndex);
+		jTemp.at("SensorIndex").get_to(k.SensorIndex);
+		jTemp.at("SensorType").get_to(k.SensorType);
+		for (auto& el : jTemp["Data"].items())
+			k.Data.push_back(el.value());
 	}
 }

@@ -204,29 +204,93 @@ int Client::findDevice(DeviceClass dev) {
 	return -1;
 }
 
-void Client::sendScalar(DeviceClass dev, double str) {
+void Client::stopDevice(DeviceClass dev) {
 	std::lock_guard<std::mutex> lock{msgMx};
-	int idx = findDevice(dev);
+
 	mhl::Requests req;
+	req.stopDeviceCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::StopDeviceCmd);
+	req.stopDeviceCmd.DeviceIndex = dev.deviceID;
 	
-	req.scalarCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
-	req.scalarCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::ScalarCmd);
-	int i = 0;
-	for (auto& el : messageHandler.deviceList.Devices[idx].DeviceMessages[0].DeviceCmdAttributes) {
-		Scalar sc;
-		sc.ActuatorType = el.ActuatorType;
-		sc.ScalarVal = str;
-		sc.Index = i;
-		req.scalarCmd.Scalars.push_back(sc);
-		i++;
-	}
-	messageHandler.messageType = mhl::MessageTypes::ScalarCmd;
+	messageHandler.messageType = mhl::MessageTypes::StopDeviceCmd;
 
 	json j = json::array({ messageHandler.handleClientRequest(req) });
 	std::cout << j << std::endl;
 
 	std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 	sendHandler.detach();
+}
+
+void Client::stopAllDevices() {
+	std::lock_guard<std::mutex> lock{msgMx};
+
+	mhl::Requests req;
+	req.stopDeviceCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::StopAllDevices);
+
+	messageHandler.messageType = mhl::MessageTypes::StopAllDevices;
+
+	json j = json::array({ messageHandler.handleClientRequest(req) });
+	std::cout << j << std::endl;
+
+	std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+	sendHandler.detach();
+}
+
+void Client::sendScalar(DeviceClass dev, double str) {
+	std::lock_guard<std::mutex> lock{msgMx};
+	int idx = findDevice(dev);
+	if (idx > -1) {
+		mhl::Requests req;
+
+		for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+			std::string testScalar = "ScalarCmd";
+			if (!el1.CmdType.compare(testScalar)) {
+				req.scalarCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
+				req.scalarCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::ScalarCmd);
+				int i = 0;
+				for (auto& el2: el1.DeviceCmdAttributes) {
+					Scalar sc;
+					sc.ActuatorType = el2.ActuatorType;
+					sc.ScalarVal = str;
+					sc.Index = i;
+					req.scalarCmd.Scalars.push_back(sc);
+					i++;
+				}
+				messageHandler.messageType = mhl::MessageTypes::ScalarCmd;
+
+				json j = json::array({ messageHandler.handleClientRequest(req) });
+				std::cout << j << std::endl;
+
+				std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+				sendHandler.detach();
+			}
+		}
+	}
+}
+
+void Client::sensorRead(DeviceClass dev, int senIndex) {
+	std::lock_guard<std::mutex> lock{msgMx};
+	int idx = findDevice(dev);
+	if (idx > -1) {
+		mhl::Requests req;
+
+		for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+			std::string testSensor = "SensorReadCmd";
+			if (!el1.CmdType.compare(testSensor)) {
+				req.sensorReadCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
+				req.sensorReadCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::SensorReadCmd);
+				req.sensorReadCmd.SensorIndex = senIndex;
+				req.sensorReadCmd.SensorType = el1.DeviceCmdAttributes[senIndex].SensorType;
+				int i = 0;
+				messageHandler.messageType = mhl::MessageTypes::SensorReadCmd;
+
+				json j = json::array({ messageHandler.handleClientRequest(req) });
+				std::cout << j << std::endl;
+
+				std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+				sendHandler.detach();
+			}
+		}
+	}
 }
 
 // Message handling function.

@@ -35,7 +35,6 @@ find_package(nlohmann_json 3.2.0 REQUIRED)
 target_link_libraries(buttplugCpp PUBLIC ixwebsocket::ixwebsocket nlohmann_json::nlohmann_json)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET buttplugCpp PROPERTY CXX_STANDARD 20)
+  set_property(TARGET buttplugCpp PROPERTY CXX_STANDARD 11)
 endif()
-
 # TODO: Add tests and install targets if needed.

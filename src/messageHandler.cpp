@@ -50,6 +50,8 @@ namespace mhl {
 			}
 			break;
 		case mhl::MessageTypes::SensorReading:
+			sensorReading = msg.get<msg::SensorReading>();
+			messageType = mhl::MessageTypes::SensorReading;
 			break;
 		}
 	}
@@ -70,8 +72,17 @@ namespace mhl {
 		case mhl::MessageTypes::StopScanning:
 			j = req.stopScanning;
 			break;
+		case mhl::MessageTypes::StopDeviceCmd:
+			j = req.stopDeviceCmd;
+			break;
+		case mhl::MessageTypes::StopAllDevices:
+			j = req.stopAllDevices;
+			break;
 		case mhl::MessageTypes::ScalarCmd:
 			j = req.scalarCmd;
+			break;
+		case mhl::MessageTypes::SensorReadCmd:
+			j = req.sensorReadCmd;
 			break;
 		}
 		return j;

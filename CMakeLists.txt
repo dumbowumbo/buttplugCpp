@@ -30,9 +30,12 @@ target_sources(buttplugCpp PUBLIC
 )
 
 hunter_add_package(nlohmann_json)
+hunter_add_package(ZLIB)
 find_package(ixwebsocket CONFIG REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
-target_link_libraries(buttplugCpp PUBLIC ixwebsocket::ixwebsocket nlohmann_json::nlohmann_json)
+find_package(ZLIB REQUIRED)
+find_package(Threads REQUIRED)
+target_link_libraries(buttplugCpp PUBLIC ixwebsocket::ixwebsocket nlohmann_json::nlohmann_json Threads::Threads)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET buttplugCpp PROPERTY CXX_STANDARD 11)

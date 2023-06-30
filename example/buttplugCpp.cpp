@@ -27,6 +27,7 @@ void callbackFunction(const mhl::Messages msg) {
 int main()
 {
 	std::string url = "ws://127.0.0.1";
+    std::cout << "\n";
 	Client client(url, 12345);
 	client.connect(callbackFunction);
 	client.requestDeviceList();
@@ -36,14 +37,13 @@ int main()
 		client.stopScan();
 		break;
 	}
-
 	std::vector<DeviceClass> myDevices = client.getDevices();
 	//client.sendScalar(myDevices[0], 0.5);
 	//client.sendScalar(myDevices[1], 0.5);
-	client.sensorRead(myDevices[1], 0);
+	//client.sensorRead(myDevices[1], 0);
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	client.stopAllDevices();
-	std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+	//std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
 	return 0;
 }

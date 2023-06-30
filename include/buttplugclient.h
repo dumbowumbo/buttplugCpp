@@ -6,7 +6,9 @@
 #include <queue>
 
 #include <IXWebSocket.h>
+#ifdef _WIN32
 #include <IXNetSystem.h>
+#endif
 #include "messageHandler.h"
 
 // Helper class to store devices and access them outside of the library.
@@ -24,19 +26,23 @@ class Client {
 public:
 	// Constructor which initialized websockets for Windows. Add an IFDEF depending on compilation OS for portability.
 	Client(std::string url, unsigned int port) {
+		#ifdef _WIN32
 		ix::initNetSystem();
+		#endif
 		lUrl = url;
 		lPort = port;
 	}
 	~Client() {
+		#ifdef _WIN32
 		ix::uninitNetSystem();
+		#endif
 	}
 
 	int connect(void (*callFunc)(const mhl::Messages));
 	// Atomic variables to store connection status. Can be accessed outside library too since atomic.
-	std::atomic<int> wsConnected = 0;
-	std::atomic<int> isConnecting = 0;
-	std::atomic<int> clientConnected = 0;
+	std::atomic<int> wsConnected{0};
+	std::atomic<int> isConnecting{0};
+	std::atomic<int> clientConnected{0};
 	// Condition variables for the atomics, we want C++11 support
 	std::condition_variable condClient;
 	std::condition_variable condWs;

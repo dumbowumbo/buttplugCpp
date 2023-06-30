@@ -14,4 +14,4 @@ target_sources(buttplugCpp PUBLIC
 in your CMake file. Also make sure to build IXWebSockets (without zlib, unless you want to deal with getting it working with CMake). Nlohmann Json dependency is handled by Hunter, so make sure you have Hunter in your project too. I provide an example CMake file which makes the example program in example directory.
 
 ## More info
-This is currently for Windows only, although the port to Linux is not too difficult (mostly just testing). The C++ version is C++11. This library and its documentation is still WIP.
+Currently this library was tested (not very extensively) with Linux and Windows. The C++ version is C++11. This library and its documentation is still WIP.

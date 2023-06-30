@@ -1,10 +1,10 @@
 #include <string>
 #include <vector>
 
-#ifdef _DEBUG
-#define DBOUT cout // or any other ostream
+#ifdef DEBUG
+#define DEBUG_MSG(str) do { std::cout << str << std::endl; } while( false )
 #else
-#define DBOUT 0 && cout
+#define DEBUG_MSG(str) do { } while ( false )
 #endif
 
 

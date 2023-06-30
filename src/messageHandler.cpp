@@ -8,7 +8,7 @@ namespace mhl {
 		auto result = std::find_if(
 			messageMap.begin(),
 			messageMap.end(),
-			[msgType](const auto& mo) {return mo.second == msgType; });
+			[msgType](std::pair<const mhl::MessageTypes, std::__cxx11::basic_string<char> > mo) {return mo.second == msgType; });
 		auto msgEnumType = result->first;
 
 		int i = 0;

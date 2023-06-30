@@ -32,3 +32,9 @@
 *.app
 /.vs
 /out/build/x64-debug
+/CMakeFiles
+/_3rdParty
+/CMakeCache.txt
+/cmake_install.cmake
+/Makefile
+/buttplugCpp

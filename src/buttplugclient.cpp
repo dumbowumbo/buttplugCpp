@@ -146,7 +146,7 @@ void Client::sendMessage(json msg, mhl::MessageTypes mType) {
 	// If started, wait for the socket to connect first.
 	if (!wsConnected && isConnecting) {
 		std::unique_lock<std::mutex> lock{msgMx};
-		std::DBOUT << "Waiting for socket to connect" << std::endl;
+		DEBUG_MSG("Waiting for socket to connect");
 		auto wsConnStatus = [this]() {return wsConnected == 1; };
 		condWs.wait(lock, wsConnStatus);
 		std::cout << "Connected to socket" << std::endl;

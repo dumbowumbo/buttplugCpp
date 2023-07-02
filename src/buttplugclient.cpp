@@ -1,5 +1,14 @@
 #include "../include/buttplugclient.h"
 
+/*
+	TODO: Let the user access the devices in more details, that is, how many scalar cmds,
+	how many sensor cmds and their types. Implement some kind of logging to track whether
+	commands are successful. Implement Linear and Rotation cmds. Port to Linux.
+	Investigate whether push back won't ruin sending scalar and sensor cmds, since the
+	device list does not provide scalar or sensor indices (don't think it will).
+*/
+
+
 // Connection function with a function parameter which acts as a callback.
 int Client::connect(void (*callFunc)(const mhl::Messages)) {
 	FullUrl = lUrl + ":" + std::to_string(lPort);
@@ -197,6 +206,11 @@ std::vector<DeviceClass> Client::getDevices() {
 	return devices;
 }
 
+SensorClass Client::getSensors() {
+	std::lock_guard<std::mutex> lock{msgMx};
+	return sensorData;
+}
+
 int Client::findDevice(DeviceClass dev) {
 	for (int i = 0; i < messageHandler.deviceList.Devices.size(); i++)
 		if (messageHandler.deviceList.Devices[i].DeviceIndex == dev.deviceID)
@@ -293,6 +307,58 @@ void Client::sensorRead(DeviceClass dev, int senIndex) {
 	}
 }
 
+void Client::sensorSubscribe(DeviceClass dev, int senIndex) {
+	std::lock_guard<std::mutex> lock{msgMx};
+	int idx = findDevice(dev);
+	if (idx > -1) {
+		mhl::Requests req;
+
+		for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+			std::string testSensor = "SensorReadCmd";
+			if (!el1.CmdType.compare(testSensor)) {
+				req.sensorSubscribeCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
+				req.sensorSubscribeCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::SensorSubscribeCmd);
+				req.sensorSubscribeCmd.SensorIndex = senIndex;
+				req.sensorSubscribeCmd.SensorType = el1.DeviceCmdAttributes[senIndex].SensorType;
+				int i = 0;
+				messageHandler.messageType = mhl::MessageTypes::SensorSubscribeCmd;
+
+				json j = json::array({ messageHandler.handleClientRequest(req) });
+				std::cout << j << std::endl;
+
+				std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+				sendHandler.detach();
+			}
+		}
+	}
+}
+
+void Client::sensorUnsubscribe(DeviceClass dev, int senIndex) {
+	std::lock_guard<std::mutex> lock{msgMx};
+	int idx = findDevice(dev);
+	if (idx > -1) {
+		mhl::Requests req;
+
+		for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+			std::string testSensor = "SensorReadCmd";
+			if (!el1.CmdType.compare(testSensor)) {
+				req.sensorUnsubscribeCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
+				req.sensorUnsubscribeCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::SensorUnsubscribeCmd);
+				req.sensorUnsubscribeCmd.SensorIndex = senIndex;
+				req.sensorUnsubscribeCmd.SensorType = el1.DeviceCmdAttributes[senIndex].SensorType;
+				int i = 0;
+				messageHandler.messageType = mhl::MessageTypes::SensorUnsubscribeCmd;
+
+				json j = json::array({ messageHandler.handleClientRequest(req) });
+				std::cout << j << std::endl;
+
+				std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+				sendHandler.detach();
+			}
+		}
+	}
+}
+
 // Message handling function.
 // TODO: add client disconnect which stops this thread too.
 void Client::messageHandling() {
@@ -330,6 +396,8 @@ void Client::messageHandling() {
 			if (messageHandler.messageType == mhl::MessageTypes::DeviceAdded ||
 				messageHandler.messageType == mhl::MessageTypes::DeviceList  ||
 				messageHandler.messageType == mhl::MessageTypes::DeviceRemoved) updateDevices();
+
+			if (messageHandler.messageType == mhl::MessageTypes::SensorReading) sensorData = messageHandler.sensorReading;
 
 			// Callback function for the user.
 			messageCallback(messageHandler);

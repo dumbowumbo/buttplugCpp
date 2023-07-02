@@ -8,7 +8,7 @@ namespace mhl {
 		auto result = std::find_if(
 			messageMap.begin(),
 			messageMap.end(),
-			[msgType](std::pair<const mhl::MessageTypes, std::__cxx11::basic_string<char> > mo) {return mo.second == msgType; });
+			[msgType](std::pair<const mhl::MessageTypes, std::basic_string<char> > mo) {return mo.second == msgType; });
 		auto msgEnumType = result->first;
 
 		int i = 0;
@@ -83,6 +83,12 @@ namespace mhl {
 			break;
 		case mhl::MessageTypes::SensorReadCmd:
 			j = req.sensorReadCmd;
+			break;
+		case mhl::MessageTypes::SensorSubscribeCmd:
+			j = req.sensorSubscribeCmd;
+			break;
+		case mhl::MessageTypes::SensorUnsubscribeCmd:
+			j = req.sensorUnsubscribeCmd;
 			break;
 		}
 		return j;

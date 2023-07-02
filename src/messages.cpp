@@ -40,6 +40,14 @@ namespace msg {
 		j["SensorReadCmd"] = { {"Id", k.Id}, {"DeviceIndex", k.DeviceIndex}, {"SensorIndex", k.SensorIndex}, {"SensorType", k.SensorType}};
 	}
 
+	void to_json(json& j, const SensorSubscribeCmd& k) {
+		j["SensorSubscribeCmd"] = { {"Id", k.Id}, {"DeviceIndex", k.DeviceIndex}, {"SensorIndex", k.SensorIndex}, {"SensorType", k.SensorType} };
+	}
+
+	void to_json(json& j, const SensorUnsubscribeCmd& k) {
+		j["SensorUnsubscribeCmd"] = { {"Id", k.Id}, {"DeviceIndex", k.DeviceIndex}, {"SensorIndex", k.SensorIndex}, {"SensorType", k.SensorType} };
+	}
+
 	void from_json(const json& j, ServerInfo& k) {
 		json jTemp;
 		j.at("ServerInfo").get_to(jTemp);

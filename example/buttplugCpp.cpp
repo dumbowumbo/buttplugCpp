@@ -40,9 +40,10 @@ int main()
 	std::vector<DeviceClass> myDevices = client.getDevices();
 	//client.sendScalar(myDevices[0], 0.5);
 	//client.sendScalar(myDevices[1], 0.5);
-	//client.sensorRead(myDevices[1], 0);
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	client.stopAllDevices();
+	client.sensorSubscribe(myDevices[0], 0);
+	std::this_thread::sleep_for(std::chrono::milliseconds(20000));
+	client.sensorUnsubscribe(myDevices[0], 0);
+	//client.stopAllDevices();
 	//std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
 	return 0;

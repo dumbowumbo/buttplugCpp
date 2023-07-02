@@ -114,6 +114,22 @@ namespace msg {
 		std::vector<int> Data;
 	};
 
+	class SensorSubscribeCmd {
+	public:
+		unsigned int Id = 1;
+		unsigned int DeviceIndex;
+		unsigned int SensorIndex;
+		std::string SensorType;
+	};
+
+	class SensorUnsubscribeCmd {
+	public:
+		unsigned int Id = 1;
+		unsigned int DeviceIndex;
+		unsigned int SensorIndex;
+		std::string SensorType;
+	};
+
 	extern void to_json(json& j, const RequestServerInfo& k);
 	extern void to_json(json& j, const StartScanning& k);
 	extern void to_json(json& j, const StopScanning& k);
@@ -122,6 +138,8 @@ namespace msg {
 	extern void to_json(json& j, const StopAllDevices& k);
 	extern void to_json(json& j, const ScalarCmd& k);
 	extern void to_json(json& j, const SensorReadCmd& k);
+	extern void to_json(json& j, const SensorSubscribeCmd& k);
+	extern void to_json(json& j, const SensorUnsubscribeCmd& k);
 	extern void from_json(const json& j, ServerInfo& k);
 	extern void from_json(const json& j, DeviceList& k);
 	extern void from_json(const json& j, DeviceAdded& k);

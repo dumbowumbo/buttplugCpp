@@ -11,6 +11,8 @@
 #endif
 #include "messageHandler.h"
 
+typedef msg::SensorReading SensorClass;
+
 // Helper class to store devices and access them outside of the library.
 class DeviceClass {
 public:
@@ -55,9 +57,12 @@ public:
 	void stopAllDevices();
 	void sendScalar(DeviceClass dev, double str);
 	void sensorRead(DeviceClass dev, int senIndex);
+	void sensorSubscribe(DeviceClass dev, int senIndex);
+	void sensorUnsubscribe(DeviceClass dev, int senIndex);
 
-	// Mutex blocked function which grabs the currently connected devices.
+	// Mutex blocked function which grabs the currently connected devices and sensor reads.
 	std::vector<DeviceClass> getDevices();
+	SensorClass getSensors();
 private:
 	// URL variables for the websocket.
 	std::string FullUrl;
@@ -78,8 +83,9 @@ private:
 	// Callback function for when a message is received and handled.
 	std::function<void(const mhl::Messages&)> messageCallback;
 
-	// Device class vector which is grabbed outside of the library.
+	// Device and sensor class vector which is grabbed outside of the library.
 	std::vector<DeviceClass> devices;
+	SensorClass sensorData;
 
 	void connectServer();
 	void callbackFunction(const ix::WebSocketMessagePtr& msg);

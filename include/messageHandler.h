@@ -44,6 +44,8 @@ namespace mhl {
 		msg::StopAllDevices stopAllDevices;
 		msg::ScalarCmd scalarCmd;
 		msg::SensorReadCmd sensorReadCmd;
+		msg::SensorSubscribeCmd sensorSubscribeCmd;
+		msg::SensorUnsubscribeCmd sensorUnsubscribeCmd;
 	};
 
 	// Class for messages received and for handling all types of messages.

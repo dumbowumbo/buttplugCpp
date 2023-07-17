@@ -167,6 +167,7 @@ void Client::sendMessage(json msg, mhl::MessageTypes mType) {
 		std::cout << "Waiting for client to connect" << std::endl;
 		if (mType == mhl::MessageTypes::RequestServerInfo) {
 			webSocket.send(msg.dump());
+			if (logging) logInfo.logSentMessage("RequestServerInfo", static_cast<unsigned int>(mType));
 			std::cout << "Started connection to client" << std::endl;
 			return;
 		}
@@ -176,8 +177,16 @@ void Client::sendMessage(json msg, mhl::MessageTypes mType) {
 		std::cout << "Connected to client" << std::endl;
 		webSocket.send(msg.dump());
 	}
-	// If everything is connected, simply send message.
+	// If everything is connected, simply send message and log request if enabled.
 	else if (wsConnected && clientConnected) webSocket.send(msg.dump());
+	if (logging) {
+		auto result = std::find_if(
+			messageHandler.messageMap.begin(),
+			messageHandler.messageMap.end(),
+			[mType](std::pair<const mhl::MessageTypes, std::basic_string<char> > mo) {return mo.first == mType; });
+		std::string msgTypeText = result->second;
+		logInfo.logSentMessage(msgTypeText, static_cast<unsigned int>(mType));
+	}
 }
 
 // This takes the device data from message handler and puts it in to main device class
@@ -398,6 +407,10 @@ void Client::messageHandling() {
 				messageHandler.messageType == mhl::MessageTypes::DeviceRemoved) updateDevices();
 
 			if (messageHandler.messageType == mhl::MessageTypes::SensorReading) sensorData = messageHandler.sensorReading;
+
+			// Log if logging is enabled.
+			if (logging)
+				logInfo.logReceivedMessage(el.value().begin().key(), static_cast<unsigned int>(messageHandler.messageType));
 
 			// Callback function for the user.
 			messageCallback(messageHandler);

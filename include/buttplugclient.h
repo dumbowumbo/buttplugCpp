@@ -10,6 +10,7 @@
 #include <IXNetSystem.h>
 #endif
 #include "messageHandler.h"
+#include "log.h"
 
 typedef msg::SensorReading SensorClass;
 
@@ -33,6 +34,16 @@ public:
 		#endif
 		lUrl = url;
 		lPort = port;
+	}
+	Client(std::string url, unsigned int port, std::string logfile) {
+		#ifdef _WIN32
+		ix::initNetSystem();
+		#endif
+		lUrl = url;
+		lPort = port;
+		logging = 1;
+		if (!logfile.empty()) logInfo.init(logfile);
+		else logInfo.init("log.txt");
 	}
 	~Client() {
 		#ifdef _WIN32
@@ -68,6 +79,9 @@ private:
 	std::string FullUrl;
 	std::string lUrl;
 	unsigned int lPort;
+
+	int logging = 0;
+	Logger logInfo;
 
 	ix::WebSocket webSocket;
 

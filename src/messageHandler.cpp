@@ -15,8 +15,12 @@ namespace mhl {
 		// Switch that converts message to class.
 		switch (msgEnumType) {
 		case mhl::MessageTypes::Ok:
+			messageType = mhl::MessageTypes::Ok;
+			ok = msg.get<msg::Ok>();
 			break;
 		case mhl::MessageTypes::Error:
+			messageType = mhl::MessageTypes::Error;
+			error = msg.get<msg::Error>();
 			break;
 		case mhl::MessageTypes::ServerInfo:
 			// Set message type and convert to class from json.

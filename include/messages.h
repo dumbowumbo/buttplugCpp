@@ -10,14 +10,14 @@ using json = nlohmann::json;
 namespace msg {
 	class Ok {
 	public:
-		unsigned int Id = 5;
+		unsigned int Id = 1;
 		//NLOHMANN_DEFINE_TYPE_INTRUSIVE(Ok, Id);
 	};
 
 	class Error {
 	public:
-		unsigned int Id = 0;
-		std::string ErrorMessage = "test";
+		unsigned int Id = 1;
+		std::string ErrorMessage = "";
 		int ErrorCode = 0;
 
 		//NLOHMANN_DEFINE_TYPE_INTRUSIVE(Error, Id, ErrorMessage, ErrorCode);
@@ -140,6 +140,8 @@ namespace msg {
 	extern void to_json(json& j, const SensorReadCmd& k);
 	extern void to_json(json& j, const SensorSubscribeCmd& k);
 	extern void to_json(json& j, const SensorUnsubscribeCmd& k);
+	extern void from_json(const json& j, Ok& k);
+	extern void from_json(const json& j, Error& k);
 	extern void from_json(const json& j, ServerInfo& k);
 	extern void from_json(const json& j, DeviceList& k);
 	extern void from_json(const json& j, DeviceAdded& k);

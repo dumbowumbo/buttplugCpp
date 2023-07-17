@@ -57,6 +57,20 @@ namespace msg {
 		jTemp.at("MaxPingTime").get_to(k.MaxPingTime);
 	}
 
+	void from_json(const json& j, Ok& k) {
+		json jTemp;
+		j.at("Ok").get_to(jTemp);
+		jTemp.at("Id").get_to(k.Id);
+	}
+
+	void from_json(const json& j, Error& k) {
+		json jTemp;
+		j.at("Error").get_to(jTemp);
+		jTemp.at("Id").get_to(k.Id);
+		jTemp.at("ErrorCode").get_to(k.ErrorCode);
+		jTemp.at("ErrorMessage").get_to(k.ErrorMessage);
+	}
+
 	void from_json(const json& j, DeviceRemoved& k) {
 		json jTemp;
 		j.at("DeviceRemoved").get_to(jTemp);

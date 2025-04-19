@@ -4,6 +4,7 @@
 #include <atomic>
 #include <sstream>
 #include <queue>
+#include <map>
 
 #include <IXWebSocket.h>
 #ifdef _WIN32
@@ -21,6 +22,7 @@ public:
 	std::string displayName;
 	std::vector<std::string> commandTypes;
 	std::vector<std::string> sensorTypes;
+	std::map<std::string, std::vector<DeviceCmdAttr>> commandAttributes;
 	unsigned int deviceID;
 };
 
@@ -67,6 +69,8 @@ public:
 	void stopDevice(DeviceClass dev);
 	void stopAllDevices();
 	void sendScalar(DeviceClass dev, double str);
+	void sendScalarActuators(DeviceClass dev, const std::map<unsigned int, double>& actuatorValues);
+	std::vector<DeviceCmdAttr> getDeviceCommandAttributes(DeviceClass dev, const std::string& commandType);
 	void sensorRead(DeviceClass dev, int senIndex);
 	void sensorSubscribe(DeviceClass dev, int senIndex);
 	void sensorUnsubscribe(DeviceClass dev, int senIndex);

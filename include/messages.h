@@ -97,6 +97,20 @@ namespace msg {
 		std::vector<Scalar> Scalars;
 	};
 
+	class LinearCmd {
+	public:
+		unsigned int Id = 1;
+		unsigned int DeviceIndex;
+		std::vector<Linear> Vectors;
+	};
+	
+	class RotateCmd {
+	public:
+		unsigned int Id = 1;
+		unsigned int DeviceIndex;
+		std::vector<Rotate> Rotations;
+	};
+
 	class SensorReadCmd {
 	public:
 		unsigned int Id = 1;
@@ -137,6 +151,8 @@ namespace msg {
 	extern void to_json(json& j, const StopDeviceCmd& k);
 	extern void to_json(json& j, const StopAllDevices& k);
 	extern void to_json(json& j, const ScalarCmd& k);
+	extern void to_json(json& j, const LinearCmd& k);
+	extern void to_json(json& j, const RotateCmd& k);
 	extern void to_json(json& j, const SensorReadCmd& k);
 	extern void to_json(json& j, const SensorSubscribeCmd& k);
 	extern void to_json(json& j, const SensorUnsubscribeCmd& k);

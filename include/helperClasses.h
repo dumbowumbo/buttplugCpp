@@ -7,7 +7,6 @@
 #define DEBUG_MSG(str) do { } while ( false )
 #endif
 
-
 class DeviceCmdAttr {
 public:
 	std::string FeatureDescriptor = "";
@@ -39,4 +38,18 @@ public:
 	unsigned int Index;
 	double ScalarVal;
 	std::string ActuatorType;
+};
+
+class Linear {
+public:
+	unsigned int Index;
+	double Duration;
+	double Position;
+};
+
+class Rotate {
+public:
+	unsigned int Index;
+	double Speed;
+	bool Clockwise;
 };

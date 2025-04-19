@@ -85,6 +85,12 @@ namespace mhl {
 		case mhl::MessageTypes::ScalarCmd:
 			j = req.scalarCmd;
 			break;
+		case mhl::MessageTypes::LinearCmd:
+			j = req.linearCmd;
+			break;
+		case mhl::MessageTypes::RotateCmd:
+			j = req.rotateCmd;
+			break;
 		case mhl::MessageTypes::SensorReadCmd:
 			j = req.sensorReadCmd;
 			break;

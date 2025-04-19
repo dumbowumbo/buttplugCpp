@@ -43,6 +43,8 @@ namespace mhl {
 		msg::StopDeviceCmd stopDeviceCmd;
 		msg::StopAllDevices stopAllDevices;
 		msg::ScalarCmd scalarCmd;
+		msg::LinearCmd linearCmd;
+		msg::RotateCmd rotateCmd;
 		msg::SensorReadCmd sensorReadCmd;
 		msg::SensorSubscribeCmd sensorSubscribeCmd;
 		msg::SensorUnsubscribeCmd sensorUnsubscribeCmd;

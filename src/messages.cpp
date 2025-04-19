@@ -26,6 +26,34 @@ namespace msg {
 		j["StopAllDevices"] = { {"Id", k.Id} };
 	}
 
+	void to_json(json& j, const LinearCmd& k) {
+		j["LinearCmd"] = { {"Id", k.Id}, {"DeviceIndex", k.DeviceIndex} };
+		j["LinearCmd"]["Vectors"] = json::array();
+		
+		for (auto& vec : k.Vectors) {
+			json jTemp = { 
+				{ "Index", vec.Index }, 
+				{ "Duration", vec.Duration }, 
+				{ "Position", vec.Position }
+			};
+			j["LinearCmd"]["Vectors"].insert(j["LinearCmd"]["Vectors"].end(), jTemp);
+		}
+	}
+	
+	void to_json(json& j, const RotateCmd& k) {
+		j["RotateCmd"] = { {"Id", k.Id}, {"DeviceIndex", k.DeviceIndex} };
+		j["RotateCmd"]["Rotations"] = json::array();
+		
+		for (auto& rot : k.Rotations) {
+			json jTemp = { 
+				{ "Index", rot.Index }, 
+				{ "Speed", rot.Speed }, 
+				{ "Clockwise", rot.Clockwise }
+			};
+			j["RotateCmd"]["Rotations"].insert(j["RotateCmd"]["Rotations"].end(), jTemp);
+		}
+	}
+	
 	void to_json(json& j, const ScalarCmd& k) {
 		j["ScalarCmd"] = { {"Id", k.Id}, {"DeviceIndex", k.DeviceIndex} };
 		j["ScalarCmd"]["Scalars"] = json::array();

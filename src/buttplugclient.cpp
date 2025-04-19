@@ -189,24 +189,29 @@ void Client::sendMessage(json msg, mhl::MessageTypes mType) {
 	}
 }
 
-// This takes the device data from message handler and puts it in to main device class
-// for user access.
 void Client::updateDevices() {
-	std::vector<DeviceClass> tempDeviceVec;
-	// Iterate through available devices.
-	for (auto& el : messageHandler.deviceList.Devices) {
-		DeviceClass tempDevice;
-		// Set the appropriate class variables.
-		tempDevice.deviceID = el.DeviceIndex;
-		tempDevice.deviceName = el.DeviceName;
-		tempDevice.displayName = el.DeviceDisplayName;
-		if (el.DeviceMessages.size() > 0) {
-			for (auto& el2 : el.DeviceMessages) tempDevice.commandTypes.push_back(el2.CmdType);
-		}
-		// Push back the device in vector.
-		tempDeviceVec.push_back(tempDevice);
-	}
-	devices = tempDeviceVec;
+    std::vector<DeviceClass> tempDeviceVec;
+    // Iterate through available devices.
+    for (auto& el : messageHandler.deviceList.Devices) {
+        DeviceClass tempDevice;
+        // Set the appropriate class variables.
+        tempDevice.deviceID = el.DeviceIndex;
+        tempDevice.deviceName = el.DeviceName;
+        tempDevice.displayName = el.DeviceDisplayName;
+        if (el.DeviceMessages.size() > 0) {
+            for (auto& el2 : el.DeviceMessages) {
+                tempDevice.commandTypes.push_back(el2.CmdType);
+                
+                // Store attributes for all command types
+                if (!el2.DeviceCmdAttributes.empty()) {
+                    tempDevice.commandAttributes[el2.CmdType] = el2.DeviceCmdAttributes;
+                }
+            }
+        }
+        // Push back the device in vector.
+        tempDeviceVec.push_back(tempDevice);
+    }
+    devices = tempDeviceVec;
 }
 
 // Mutex locked function to provide the user with available devices.
@@ -288,6 +293,62 @@ void Client::sendScalar(DeviceClass dev, double str) {
 			}
 		}
 	}
+}
+
+std::vector<DeviceCmdAttr> Client::getDeviceCommandAttributes(DeviceClass dev, const std::string& commandType) {
+    std::lock_guard<std::mutex> lock{msgMx};
+    int idx = findDevice(dev);
+    if (idx > -1) {
+        for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+            if (el1.CmdType == commandType) {
+				std::cout << el1.DeviceCmdAttributes[0].ActuatorType << " " << el1.DeviceCmdAttributes[0].FeatureDescriptor << " " << el1.DeviceCmdAttributes[0].StepCount << std::endl;
+                return el1.DeviceCmdAttributes;
+            }
+        }
+    }
+    return {};
+}
+
+void Client::sendScalarActuators(DeviceClass dev, const std::map<unsigned int, double>& actuatorValues) {
+    std::lock_guard<std::mutex> lock{msgMx};
+    int idx = findDevice(dev);
+    if (idx > -1) {
+        mhl::Requests req;
+
+        // Find the ScalarCmd entry
+        for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+            if (el1.CmdType == "ScalarCmd") {
+                req.scalarCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
+                req.scalarCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::ScalarCmd);
+                
+                // Use C++11 compatible map iteration
+                for (auto it = actuatorValues.begin(); it != actuatorValues.end(); ++it) {
+                    unsigned int actuatorIdx = it->first;
+                    double value = it->second;
+                    
+                    // Check if this actuator index is valid
+                    if (actuatorIdx < el1.DeviceCmdAttributes.size()) {
+                        Scalar sc;
+                        sc.ActuatorType = el1.DeviceCmdAttributes[actuatorIdx].ActuatorType;
+                        sc.ScalarVal = value;
+                        sc.Index = actuatorIdx;
+                        req.scalarCmd.Scalars.push_back(sc);
+                    }
+                }
+                
+                if (!req.scalarCmd.Scalars.empty()) {
+                    messageHandler.messageType = mhl::MessageTypes::ScalarCmd;
+
+                    json j = json::array({ messageHandler.handleClientRequest(req) });
+                    std::cout << j << std::endl;
+
+                    std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+                    sendHandler.detach();
+                }
+                break; // Exit after finding ScalarCmd
+            }
+        }
+    }
 }
 
 void Client::sensorRead(DeviceClass dev, int senIndex) {

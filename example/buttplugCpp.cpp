@@ -37,7 +37,11 @@ int main()
 		client.stopScan();
 		break;
 	}
-	//std::vector<DeviceClass> myDevices = client.getDevices();
+	std::vector<DeviceClass> myDevices = client.getDevices();
+	std::cout << myDevices.at(0).deviceID;
+	// client.getDeviceCommandAttributes(myDevices[0], "ScalarCmd");
+	// std::map<unsigned int, double> act_map = {{0, 0.5}};
+	// client.sendScalarActuators(myDevices[0], act_map);
 	//client.sendScalar(myDevices[0], 0.5);
 	//client.sendScalar(myDevices[1], 0.5);
 	//client.sensorSubscribe(myDevices[0], 0);

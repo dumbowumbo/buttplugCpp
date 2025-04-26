@@ -1,14 +1,5 @@
 #include "../include/buttplugclient.h"
 
-/*
-	TODO: Let the user access the devices in more details, that is, how many scalar cmds,
-	how many sensor cmds and their types. Implement some kind of logging to track whether
-	commands are successful. Implement Linear and Rotation cmds. Port to Linux.
-	Investigate whether push back won't ruin sending scalar and sensor cmds, since the
-	device list does not provide scalar or sensor indices (don't think it will).
-*/
-
-
 // Connection function with a function parameter which acts as a callback.
 int Client::connect(void (*callFunc)(const mhl::Messages)) {
 	FullUrl = lUrl + ":" + std::to_string(lPort);
@@ -32,8 +23,8 @@ int Client::connect(void (*callFunc)(const mhl::Messages)) {
 	isConnecting = 1;
 
 	// Start a message handler thread and detach it.
-	std::thread messageHandler(&Client::messageHandling, this);
-	messageHandler.detach();
+	messageHandlerThread = std::thread(&Client::messageHandling, this);
+	// messageHandlerThread.detach();
 
 	// Connect to server, specifically send a RequestServerInfo
 	connectServer();
@@ -62,7 +53,7 @@ void Client::callbackFunction(const ix::WebSocketMessagePtr& msg) {
 		ss << "#retries: " << msg->errorInfo.retries << std::endl;
 		ss << "Wait time(ms): " << msg->errorInfo.wait_time << std::endl;
 		ss << "HTTP Status: " << msg->errorInfo.http_status << std::endl;
-		std::cout << ss.str() << std::endl;
+		DEBUG_MSG(ss.str());
 	}
 
 	// Set atomic variable that websocket is connected once it is open.
@@ -91,7 +82,7 @@ void Client::startScan() {
 
 	// Convert the returned handled request message class to json.
 	json j = json::array({ messageHandler.handleClientRequest(req) });
-	std::cout << j << std::endl;
+	DEBUG_MSG(j);
 
 	// Start a thread that sends the message.
 	std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
@@ -107,7 +98,7 @@ void Client::stopScan() {
 	messageHandler.messageType = mhl::MessageTypes::StopScanning;
 
 	json j = json::array({ messageHandler.handleClientRequest(req) });
-	std::cout << j << std::endl;
+	DEBUG_MSG(j);
 
 	std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 	sendHandler.detach();
@@ -122,7 +113,7 @@ void Client::requestDeviceList() {
 	messageHandler.messageType = mhl::MessageTypes::RequestDeviceList;
 
 	json j = json::array({ messageHandler.handleClientRequest(req) });
-	std::cout << j << std::endl;
+	DEBUG_MSG(j);
 
 	std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 	sendHandler.detach();
@@ -139,7 +130,7 @@ void Client::connectServer() {
 	messageHandler.messageType = mhl::MessageTypes::RequestServerInfo;
 
 	json j = json::array({ messageHandler.handleClientRequest(req) });
-	std::cout << j << std::endl;
+	DEBUG_MSG(j);
 
 	std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 	sendHandler.detach();
@@ -149,7 +140,7 @@ void Client::connectServer() {
 void Client::sendMessage(json msg, mhl::MessageTypes mType) {
 	// First check whether a connection process is started.
 	if (!isConnecting && !wsConnected) {
-		std::cout << "Client is not connected and not started, start before sending a message" << std::endl;
+		DEBUG_MSG("Client is not connected and not started, start before sending a message");
 		return;
 	}
 	// If started, wait for the socket to connect first.
@@ -158,37 +149,42 @@ void Client::sendMessage(json msg, mhl::MessageTypes mType) {
 		DEBUG_MSG("Waiting for socket to connect");
 		auto wsConnStatus = [this]() {return wsConnected == 1; };
 		condWs.wait(lock, wsConnStatus);
-		std::cout << "Connected to socket" << std::endl;
+		DEBUG_MSG("Connected to socket");
 		//webSocket.send(msg.dump());
 	}
 	// Once socket is connected, either wait for client to connect, or send a message if the message type
 	// is a request server info, since this is our client connection message.
 	if (!clientConnected && isConnecting) {
-		std::cout << "Waiting for client to connect" << std::endl;
+		DEBUG_MSG("Waiting for client to connect");
 		if (mType == mhl::MessageTypes::RequestServerInfo) {
 			webSocket.send(msg.dump());
-			if (logging) logInfo.logSentMessage("RequestServerInfo", static_cast<unsigned int>(mType));
-			std::cout << "Started connection to client" << std::endl;
+			DEBUG_MSG(msg.dump());
+			if (logging) logInfo.logSentMessage("RequestServerInfo", static_cast<unsigned int>(msg.at(0).at("RequestServerInfo").at("Id")));
+			DEBUG_MSG("Started connection to client");
 			return;
 		}
 		std::unique_lock<std::mutex> lock{msgMx};
 		auto clientConnStatus = [this]() {return clientConnected == 1; };
+		// Wait until client connection is established
 		condClient.wait(lock, clientConnStatus);
-		std::cout << "Connected to client" << std::endl;
+		DEBUG_MSG("Connected to client");
 		webSocket.send(msg.dump());
 	}
 	// If everything is connected, simply send message and log request if enabled.
 	else if (wsConnected && clientConnected) webSocket.send(msg.dump());
 	if (logging) {
+		// Find the string representation of the message type for logging
 		auto result = std::find_if(
 			messageHandler.messageMap.begin(),
 			messageHandler.messageMap.end(),
 			[mType](std::pair<const mhl::MessageTypes, std::basic_string<char> > mo) {return mo.first == mType; });
 		std::string msgTypeText = result->second;
-		logInfo.logSentMessage(msgTypeText, static_cast<unsigned int>(mType));
+		// Log the sent message with its type and ID
+		logInfo.logSentMessage(msgTypeText, static_cast<unsigned int>(msg.at(0).at(msgTypeText).at("Id")));
 	}
 }
 
+// Function to update the internal devices vector based on the current state of messageHandler.deviceList
 void Client::updateDevices() {
     std::vector<DeviceClass> tempDeviceVec;
     // Iterate through available devices.
@@ -200,6 +196,7 @@ void Client::updateDevices() {
         tempDevice.displayName = el.DeviceDisplayName;
         if (el.DeviceMessages.size() > 0) {
             for (auto& el2 : el.DeviceMessages) {
+                // Add each command type supported by the device
                 tempDevice.commandTypes.push_back(el2.CmdType);
                 
                 // Store attributes for all command types
@@ -211,6 +208,7 @@ void Client::updateDevices() {
         // Push back the device in vector.
         tempDeviceVec.push_back(tempDevice);
     }
+    // Update the class member with the new device list
     devices = tempDeviceVec;
 }
 
@@ -242,7 +240,7 @@ void Client::stopDevice(DeviceClass dev) {
 	messageHandler.messageType = mhl::MessageTypes::StopDeviceCmd;
 
 	json j = json::array({ messageHandler.handleClientRequest(req) });
-	std::cout << j << std::endl;
+	DEBUG_MSG(j);
 
 	std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 	sendHandler.detach();
@@ -257,7 +255,7 @@ void Client::stopAllDevices() {
 	messageHandler.messageType = mhl::MessageTypes::StopAllDevices;
 
 	json j = json::array({ messageHandler.handleClientRequest(req) });
-	std::cout << j << std::endl;
+	DEBUG_MSG(j);
 
 	std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 	sendHandler.detach();
@@ -286,7 +284,7 @@ void Client::sendScalar(DeviceClass dev, double str) {
 				messageHandler.messageType = mhl::MessageTypes::ScalarCmd;
 
 				json j = json::array({ messageHandler.handleClientRequest(req) });
-				std::cout << j << std::endl;
+				DEBUG_MSG(j);
 
 				std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 				sendHandler.detach();
@@ -301,7 +299,8 @@ std::vector<DeviceCmdAttr> Client::getDeviceCommandAttributes(DeviceClass dev, c
     if (idx > -1) {
         for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
             if (el1.CmdType == commandType) {
-				std::cout << el1.DeviceCmdAttributes[0].ActuatorType << " " << el1.DeviceCmdAttributes[0].FeatureDescriptor << " " << el1.DeviceCmdAttributes[0].StepCount << std::endl;
+				for (auto &el2 : el1.DeviceCmdAttributes)
+				DEBUG_MSG(el2.ActuatorType << " " << el2.FeatureDescriptor << " " << el2.StepCount);
                 return el1.DeviceCmdAttributes;
             }
         }
@@ -340,12 +339,166 @@ void Client::sendScalarActuators(DeviceClass dev, const std::map<unsigned int, d
                     messageHandler.messageType = mhl::MessageTypes::ScalarCmd;
 
                     json j = json::array({ messageHandler.handleClientRequest(req) });
-                    std::cout << j << std::endl;
+                    DEBUG_MSG(j);
 
                     std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
                     sendHandler.detach();
                 }
                 break; // Exit after finding ScalarCmd
+            }
+        }
+    }
+}
+
+// Sends a LinearCmd to all linear actuators on a device
+void Client::sendLinear(DeviceClass dev, double duration, double position) {
+    std::lock_guard<std::mutex> lock{msgMx};
+    int idx = findDevice(dev);
+    if (idx > -1) {
+        mhl::Requests req;
+
+        for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+            if (el1.CmdType == "LinearCmd") {
+                req.linearCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
+                req.linearCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::LinearCmd);
+                int i = 0;
+                for (auto& el2 : el1.DeviceCmdAttributes) {
+                    Linear lin;
+                    lin.Duration = duration;
+                    lin.Position = position;
+                    lin.Index = i;
+                    req.linearCmd.Vectors.push_back(lin);
+                    i++;
+                }
+                
+                if (!req.linearCmd.Vectors.empty()) {
+                    messageHandler.messageType = mhl::MessageTypes::LinearCmd;
+
+                    json j = json::array({ messageHandler.handleClientRequest(req) });
+                    DEBUG_MSG(j);
+
+                    std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+                    sendHandler.detach();
+                }
+                break; // Exit after finding LinearCmd
+            }
+        }
+    }
+}
+
+// Sends a LinearCmd to specific linear actuators on a device
+void Client::sendLinearActuators(DeviceClass dev, const std::map<unsigned int, std::pair<double, double>>& actuatorValues) {
+    std::lock_guard<std::mutex> lock{msgMx};
+    int idx = findDevice(dev);
+    if (idx > -1) {
+        mhl::Requests req;
+
+        for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+            if (el1.CmdType == "LinearCmd") {
+                req.linearCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
+                req.linearCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::LinearCmd);
+
+                for (auto it = actuatorValues.begin(); it != actuatorValues.end(); ++it) {
+                    unsigned int actuatorIdx = it->first;
+                    double duration = it->second.first;
+                    double position = it->second.second;
+
+                    if (actuatorIdx < el1.DeviceCmdAttributes.size()) {
+                        Linear lin;
+                        lin.Duration = duration;
+                        lin.Position = position;
+                        lin.Index = actuatorIdx;
+                        req.linearCmd.Vectors.push_back(lin);
+                    }
+                }
+
+                if (!req.linearCmd.Vectors.empty()) {
+                    messageHandler.messageType = mhl::MessageTypes::LinearCmd;
+
+                    json j = json::array({ messageHandler.handleClientRequest(req) });
+                    DEBUG_MSG(j);
+
+                    std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+                    sendHandler.detach();
+                }
+                break; // Exit after finding LinearCmd
+            }
+        }
+    }
+}
+
+// Sends a RotateCmd to all rotational actuators on a device
+void Client::sendRotation(DeviceClass dev, double speed, bool clockwise) {
+    std::lock_guard<std::mutex> lock{msgMx};
+    int idx = findDevice(dev);
+    if (idx > -1) {
+        mhl::Requests req;
+
+        for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+            if (el1.CmdType == "RotateCmd") {
+                req.rotateCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
+                req.rotateCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::RotateCmd);
+                int i = 0;
+                for (auto& el2 : el1.DeviceCmdAttributes) {
+                    Rotate rot;
+                    rot.Speed = speed;
+                    rot.Clockwise = clockwise;
+                    rot.Index = i;
+                    req.rotateCmd.Rotations.push_back(rot);
+                    i++;
+                }
+                
+                if (!req.rotateCmd.Rotations.empty()) {
+                    messageHandler.messageType = mhl::MessageTypes::RotateCmd;
+
+                    json j = json::array({ messageHandler.handleClientRequest(req) });
+                    DEBUG_MSG(j);
+
+                    std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+                    sendHandler.detach();
+                }
+                break; // Exit after finding RotateCmd
+            }
+        }
+    }
+}
+
+// Sends a RotateCmd to specific rotational actuators on a device
+void Client::sendRotationActuators(DeviceClass dev, const std::map<unsigned int, std::pair<double, bool>>& actuatorValues) {
+    std::lock_guard<std::mutex> lock{msgMx};
+    int idx = findDevice(dev);
+    if (idx > -1) {
+        mhl::Requests req;
+
+        for (auto& el1 : messageHandler.deviceList.Devices[idx].DeviceMessages) {
+            if (el1.CmdType == "RotateCmd") {
+                req.rotateCmd.DeviceIndex = messageHandler.deviceList.Devices[idx].DeviceIndex;
+                req.rotateCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::RotateCmd);
+
+                for (auto it = actuatorValues.begin(); it != actuatorValues.end(); ++it) {
+                    unsigned int actuatorIdx = it->first;
+                    double speed = it->second.first;
+                    bool clockwise = it->second.second;
+
+                    if (actuatorIdx < el1.DeviceCmdAttributes.size()) {
+                        Rotate rot;
+                        rot.Speed = speed;
+                        rot.Clockwise = clockwise;
+                        rot.Index = actuatorIdx;
+                        req.rotateCmd.Rotations.push_back(rot);
+                    }
+                }
+
+                if (!req.rotateCmd.Rotations.empty()) {
+                    messageHandler.messageType = mhl::MessageTypes::RotateCmd;
+
+                    json j = json::array({ messageHandler.handleClientRequest(req) });
+                    DEBUG_MSG(j);
+
+                    std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
+                    sendHandler.detach();
+                }
+                break; // Exit after finding RotateCmd
             }
         }
     }
@@ -368,7 +521,7 @@ void Client::sensorRead(DeviceClass dev, int senIndex) {
 				messageHandler.messageType = mhl::MessageTypes::SensorReadCmd;
 
 				json j = json::array({ messageHandler.handleClientRequest(req) });
-				std::cout << j << std::endl;
+				DEBUG_MSG(j);
 
 				std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 				sendHandler.detach();
@@ -394,7 +547,7 @@ void Client::sensorSubscribe(DeviceClass dev, int senIndex) {
 				messageHandler.messageType = mhl::MessageTypes::SensorSubscribeCmd;
 
 				json j = json::array({ messageHandler.handleClientRequest(req) });
-				std::cout << j << std::endl;
+				DEBUG_MSG(j);
 
 				std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 				sendHandler.detach();
@@ -420,7 +573,7 @@ void Client::sensorUnsubscribe(DeviceClass dev, int senIndex) {
 				messageHandler.messageType = mhl::MessageTypes::SensorUnsubscribeCmd;
 
 				json j = json::array({ messageHandler.handleClientRequest(req) });
-				std::cout << j << std::endl;
+				DEBUG_MSG(j);
 
 				std::thread sendHandler(&Client::sendMessage, this, j, messageHandler.messageType);
 				sendHandler.detach();
@@ -430,19 +583,24 @@ void Client::sensorUnsubscribe(DeviceClass dev, int senIndex) {
 }
 
 // Message handling function.
-// TODO: add client disconnect which stops this thread too.
 void Client::messageHandling() {
 	// Start infinite loop.
-	while (1) {
+	while (!stopRequested) {
 		std::unique_lock<std::mutex> lock{msgMx};
 
 		// A lambda that waits to receive messages in the queue.
-		cond.wait(
-			lock,
-			[this] {
-				return !q.empty();
-			}
-		);
+        cond.wait(
+            lock,
+            [this] {
+                // Add stopRequested check here
+                return !q.empty() || stopRequested;
+            }
+        );
+
+		// Exit if stop was requested
+		if (stopRequested) {
+			return;
+		}
 
 		// If received, grab the message and pop it out.
 		std::string value = q.front();
@@ -471,7 +629,7 @@ void Client::messageHandling() {
 
 			// Log if logging is enabled.
 			if (logging)
-				logInfo.logReceivedMessage(el.value().begin().key(), static_cast<unsigned int>(messageHandler.messageType));
+				logInfo.logReceivedMessage(el.value().begin().key(), static_cast<unsigned int>(el.value().begin().value().at("Id")));
 
 			// Callback function for the user.
 			messageCallback(messageHandler);
@@ -479,6 +637,6 @@ void Client::messageHandling() {
 
 		lock.unlock();
 
-		std::cout << "[subscriber] Received " << value << std::endl;
+		DEBUG_MSG("[subscriber] Received " << value);
 	}
 }

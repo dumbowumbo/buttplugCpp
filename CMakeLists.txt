@@ -2,12 +2,14 @@
 # project specific logic here.
 #
 cmake_minimum_required (VERSION 3.8)
-include("cmake/HunterGate.cmake")
 
-HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.24.18.tar.gz"
-    SHA1 "1292e4d661e1770d6d6ca08c12c07cf34a0bf718"
-)
+# Add option for debug output
+option(BUTTPLUG_DEBUG "Enable debug output" ON)
+
+# Define a preprocessor macro if debug is enabled
+if(BUTTPLUG_DEBUG)
+    add_definitions(-DBUTTPLUG_DEBUG)
+endif()
 
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
@@ -29,8 +31,6 @@ target_sources(buttplugCpp PUBLIC
     ${SRC_FILES}
 )
 
-hunter_add_package(nlohmann_json)
-hunter_add_package(ZLIB)
 find_package(ixwebsocket CONFIG REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(ZLIB REQUIRED)

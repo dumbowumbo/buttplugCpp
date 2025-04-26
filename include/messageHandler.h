@@ -29,9 +29,10 @@ namespace mhl {
 		SensorUnsubscribeCmd
 	};
 
+	// Maps enum MessageTypes to their string representation
 	typedef std::map<MessageTypes, std::string> MessageMap_t;
 
-	// Class for request messages.
+	// Class for request messages - contains all possible request message types
 	class Requests {
 	public:
 		msg::RequestServerInfo requestServerInfo;
@@ -51,8 +52,10 @@ namespace mhl {
 	};
 
 	// Class for messages received and for handling all types of messages.
+	// Also handles converting between JSON and message objects
 	class Messages {
 	public:
+		// Current message type being processed
 		MessageTypes messageType = MessageTypes::Ok;
 		unsigned int Id;
 
@@ -81,6 +84,7 @@ namespace mhl {
 			{MessageTypes::SensorUnsubscribeCmd, "SensorUnsubscribeCmd"}
 		};
 
+		// Store server responses in these objects
 		msg::Ok ok;
 		msg::Error error;
 		msg::ServerInfo serverInfo;
@@ -90,7 +94,10 @@ namespace mhl {
 		msg::SensorReading sensorReading;
 
 		// Both server message and requests are handled in this class.
+		// Parses incoming JSON messages from server into appropriate classes
 		void handleServerMessage(json& msg);
+		
+		// Converts outgoing request objects to JSON for transmission
 		json handleClientRequest(Requests req);
 	private:
 	};

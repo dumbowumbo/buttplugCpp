@@ -8,27 +8,27 @@ using namespace std;
 
 void callbackFunction(const mhl::Messages msg) {
 	if (msg.messageType == mhl::MessageTypes::DeviceList) {
-		cout << "Device List callback" << endl;
+		DEBUG_MSG("Device List callback");
 	}
 	if (msg.messageType == mhl::MessageTypes::DeviceAdded) {
-		cout << "Device Added callback" << endl;
+		DEBUG_MSG("Device Added callback");
 	}
 	if (msg.messageType == mhl::MessageTypes::ServerInfo) {
-		cout << "Server Info callback" << endl;
+		DEBUG_MSG("Server Info callback");
 	}
 	if (msg.messageType == mhl::MessageTypes::DeviceRemoved) {
-		cout << "Device Removed callback" << endl;
+		DEBUG_MSG("Device Removed callback");
 	}
 	if (msg.messageType == mhl::MessageTypes::SensorReading) {
-		cout << "Sensor Reading callback" << endl;
+		DEBUG_MSG("Sensor Reading callback");
 	}
 }
 
 int main()
 {
 	std::string url = "ws://127.0.0.1";
-    std::cout << "\n";
-	Client client(url, 12345, "test.txt");
+    DEBUG_MSG("\n");
+	Client client(url, 12345, "test_log");
 	client.connect(callbackFunction);
 	client.requestDeviceList();
 	client.startScan();
@@ -38,17 +38,18 @@ int main()
 		break;
 	}
 	std::vector<DeviceClass> myDevices = client.getDevices();
-	std::cout << myDevices.at(0).deviceID;
-	// client.getDeviceCommandAttributes(myDevices[0], "ScalarCmd");
-	// std::map<unsigned int, double> act_map = {{0, 0.5}};
-	// client.sendScalarActuators(myDevices[0], act_map);
-	//client.sendScalar(myDevices[0], 0.5);
+	// std::cout << myDevices.at(0).deviceID;
+	client.getDeviceCommandAttributes(myDevices.at(0), "ScalarCmd");
+	std::map<unsigned int, double> act_map = {{0, 0.5}, {1, 0.1}};
+	client.sendScalarActuators(myDevices[0], act_map);
+	// client.sendScalar(myDevices[0], 0.1);
 	//client.sendScalar(myDevices[1], 0.5);
 	//client.sensorSubscribe(myDevices[0], 0);
 	//std::this_thread::sleep_for(std::chrono::milliseconds(20000));
 	//client.sensorUnsubscribe(myDevices[0], 0);
-	//client.stopAllDevices();
-	std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+	// client.stopAllDevices();
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	// client.stopAllDevices();
 
 	return 0;
 }

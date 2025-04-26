@@ -152,7 +152,7 @@ namespace msg {
 							if (el3.value().contains("SensorType")) tempAttr.SensorType = el3.value()["SensorType"];
 
 							if (el3.value().contains("SensorRange")) {
-								//std::cout << el3.value()["SensorRange"] << std::endl;
+								DEBUG_MSG("Processing SensorRange values");
 								for (auto& el4 : el3.value()["SensorRange"].items()) {
 									tempAttr.SensorRange.push_back(el4.value()[0]);
 									tempAttr.SensorRange.push_back(el4.value()[1]);
@@ -215,7 +215,7 @@ namespace msg {
 					if (el3.value().contains("SensorType")) tempAttr.SensorType = el3.value()["SensorType"];
 
 					if (el3.value().contains("SensorRange")) {
-						//std::cout << el3.value()["SensorRange"] << std::endl;
+						DEBUG_MSG("Processing SensorRange values");
 						for (auto& el4 : el3.value()["SensorRange"].items()) {
 							tempAttr.SensorRange.push_back(el4.value()[0]);
 							tempAttr.SensorRange.push_back(el4.value()[1]);

@@ -24,14 +24,14 @@ namespace mhl {
 			break;
 		case mhl::MessageTypes::ServerInfo:
 			// Set message type and convert to class from json.
-			std::cout << "Server info!" << std::endl;
+			DEBUG_MSG("Server info!");
 			messageType = mhl::MessageTypes::ServerInfo;
 			serverInfo = msg.get<msg::ServerInfo>();
 			break;
 		case mhl::MessageTypes::ScanningFinished:
 			break;
 		case mhl::MessageTypes::DeviceList:
-			std::cout << "Device list!" << std::endl;
+			DEBUG_MSG("Device list!");
 			messageType = mhl::MessageTypes::DeviceList;
 			deviceList = msg.get<msg::DeviceList>();
 			break;

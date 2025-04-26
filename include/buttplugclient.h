@@ -6,9 +6,9 @@
 #include <queue>
 #include <map>
 
-#include <IXWebSocket.h>
+#include <ixwebsocket/IXWebSocket.h>
 #ifdef _WIN32
-#include <IXNetSystem.h>
+#include <ixwebsocket/IXNetSystem.h>
 #endif
 #include "messageHandler.h"
 #include "log.h"

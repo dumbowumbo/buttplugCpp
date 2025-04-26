@@ -1,43 +1,124 @@
-﻿# CMakeList.txt : CMake project for buttplugCpp, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required(VERSION 3.12)
+project(ButtplugClient VERSION 0.1.0 LANGUAGES CXX)
 
-# Add option for debug output
-option(BUTTPLUG_DEBUG "Enable debug output" ON)
+# Set C++11 as minimum standard
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Define a preprocessor macro if debug is enabled
+# Options
+option(BUTTPLUG_BUILD_EXAMPLES "Build example applications" OFF)
+option(BUTTPLUG_DEBUG "Enable debug output" OFF)
+
+# Library sources
+set(BUTTPLUG_SOURCES
+    src/buttplugclient.cpp
+    src/log.cpp
+    src/messageHandler.cpp
+    src/messages.cpp
+)
+
+set(BUTTPLUG_HEADERS
+    include/buttplugclient.h
+    include/log.h
+    include/messageHandler.h
+    include/messages.h
+    include/helperClasses.h
+)
+
+# Create library
+add_library(buttplugclient ${BUTTPLUG_SOURCES})
+
+# Add include directory
+target_include_directories(buttplugclient
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Enable debug mode if requested
 if(BUTTPLUG_DEBUG)
-    add_definitions(-DBUTTPLUG_DEBUG)
+    target_compile_definitions(buttplugclient PRIVATE BUTTPLUG_DEBUG)
 endif()
 
-# Enable Hot Reload for MSVC compilers if supported.
-if (POLICY CMP0141)
-  cmake_policy(SET CMP0141 NEW)
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
-endif()
-
-project ("buttplugCpp")
-
-# Add source to this project's executable.
-add_executable (buttplugCpp "example/buttplugCpp.cpp" "example/buttplugCpp.h")
-
-file(GLOB SRC_FILES    
-    "src/*.cpp"
-    "include/*.h"
-)
-
-target_sources(buttplugCpp PUBLIC
-    ${SRC_FILES}
-)
-
-find_package(ixwebsocket CONFIG REQUIRED)
-find_package(nlohmann_json 3.2.0 REQUIRED)
-find_package(ZLIB REQUIRED)
+# Find dependencies
 find_package(Threads REQUIRED)
-target_link_libraries(buttplugCpp PUBLIC ixwebsocket::ixwebsocket nlohmann_json::nlohmann_json Threads::Threads)
+find_package(nlohmann_json REQUIRED)
+find_package(ixwebsocket REQUIRED)
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET buttplugCpp PROPERTY CXX_STANDARD 11)
+# Link dependencies
+target_link_libraries(buttplugclient
+    PUBLIC
+        nlohmann_json::nlohmann_json
+        ixwebsocket::ixwebsocket
+        Threads::Threads
+)
+
+# Compiler-specific settings
+if(MSVC)
+    # Windows/MSVC settings
+    target_compile_options(buttplugclient PRIVATE /W4)
+else()
+    # Linux/GCC/Clang settings
+    target_compile_options(buttplugclient PRIVATE -Wall -Wextra)
 endif()
-# TODO: Add tests and install targets if needed.
+
+# Build examples if requested
+if(BUTTPLUG_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
+# Installation configuration
+include(GNUInstallDirs)
+
+# Install the library and headers
+install(TARGETS buttplugclient
+    EXPORT ButtplugClientTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(FILES ${BUTTPLUG_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/buttplug
+)
+
+# Install CMake config files
+install(EXPORT ButtplugClientTargets
+    FILE ButtplugClientTargets.cmake
+    NAMESPACE ButtplugClient::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ButtplugClient
+)
+
+# Create and install config file
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ButtplugClientConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/ButtplugClientConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ButtplugClient
+)
+
+# Create and install version file
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/ButtplugClientConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Install config files
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/ButtplugClientConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/ButtplugClientConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ButtplugClient
+)
+
+# Add uninstall target
+if(NOT TARGET uninstall)
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+        IMMEDIATE @ONLY)
+    add_custom_target(uninstall
+        COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+endif()

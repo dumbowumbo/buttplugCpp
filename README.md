@@ -59,8 +59,8 @@ cd ../..
 3. Clone and build this repository:
 
 ```bash
-git clone https://github.com/yourusername/buttplug-cpp-client.git
-cd buttplug-cpp-client
+git clone https://github.com/dumbowumbo/buttplugCpp
+cd buttplugCpp
 mkdir build && cd build
 cmake ..
 make
@@ -108,8 +108,8 @@ vcpkg integrate install
 4. Clone this repository and open it in Visual Studio:
 
 ```cmd
-git clone https://github.com/yourusername/buttplug-cpp-client.git
-cd buttplug-cpp-client
+git clone https://github.com/dumbowumbo/buttplugCpp
+cd buttplugCpp
 ```
 
 5. Create a new CMake project in Visual Studio, or run the following from Developer Command Prompt:

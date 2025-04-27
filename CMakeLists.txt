@@ -48,12 +48,22 @@ find_package(nlohmann_json REQUIRED)
 find_package(ixwebsocket REQUIRED)
 
 # Link dependencies
-target_link_libraries(buttplugclient
-    PUBLIC
-        nlohmann_json::nlohmann_json
-        ixwebsocket::ixwebsocket
-        Threads::Threads
-)
+if(MSVC)
+    target_link_libraries(buttplugclient
+        PUBLIC
+            nlohmann_json::nlohmann_json
+            ixwebsocket::ixwebsocket
+	    Threads::Threads
+            bcrypt
+    )
+else()
+    target_link_libraries(buttplugclient
+        PUBLIC
+            nlohmann_json::nlohmann_json
+            ixwebsocket::ixwebsocket
+	    Threads::Threads
+    )
+endif()
 
 # Compiler-specific settings
 if(MSVC)

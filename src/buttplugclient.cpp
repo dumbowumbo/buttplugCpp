@@ -109,7 +109,7 @@ void Client::requestDeviceList() {
 	std::lock_guard<std::mutex> lock{msgMx};
 
 	mhl::Requests req;
-	req.stopScanning.Id = static_cast<unsigned int>(mhl::MessageTypes::RequestDeviceList);
+	req.requestDeviceList.Id = static_cast<unsigned int>(mhl::MessageTypes::RequestDeviceList);
 	messageHandler.messageType = mhl::MessageTypes::RequestDeviceList;
 
 	json j = json::array({ messageHandler.handleClientRequest(req) });
@@ -172,15 +172,33 @@ void Client::sendMessage(json msg, mhl::MessageTypes mType) {
 	}
 	// If everything is connected, simply send message and log request if enabled.
 	else if (wsConnected && clientConnected) webSocket.send(msg.dump());
-	if (logging) {
-		// Find the string representation of the message type for logging
-		auto result = std::find_if(
-			messageHandler.messageMap.begin(),
-			messageHandler.messageMap.end(),
-			[mType](std::pair<const mhl::MessageTypes, std::basic_string<char> > mo) {return mo.first == mType; });
+	// Find the string representation of the message type for logging
+	auto result = std::find_if(
+		messageHandler.messageMap.begin(),
+		messageHandler.messageMap.end(),
+		[mType](std::pair<const mhl::MessageTypes, std::string> mo) {return mo.first == mType; });
+	
+	// Check if the message type was found
+	if (result != messageHandler.messageMap.end()) {
 		std::string msgTypeText = result->second;
-		// Log the sent message with its type and ID
-		logInfo.logSentMessage(msgTypeText, static_cast<unsigned int>(msg.at(0).at(msgTypeText).at("Id")));
+		
+		// Check if the JSON structure is valid before accessing it
+		if (msg.is_array() && msg.size() > 0 && 
+			msg.at(0).contains(msgTypeText) && 
+			msg.at(0).at(msgTypeText).contains("Id")) {
+			
+			unsigned int msgId = static_cast<unsigned int>(msg.at(0).at(msgTypeText).at("Id"));
+			
+			// Lock and add to queue
+			// std::lock_guard<std::mutex> lock{msgMx};
+			// messageHandler.q_sent.push_back(std::make_pair(msgTypeText, msgId));
+			
+			// Log the sent message with its type and ID
+			if (logging) {
+				// Log the sent message
+				logInfo.logSentMessage(msgTypeText, msgId);
+			}
+		}
 	}
 }
 
@@ -224,7 +242,7 @@ SensorClass Client::getSensors() {
 }
 
 int Client::findDevice(DeviceClass dev) {
-	for (int i = 0; i < messageHandler.deviceList.Devices.size(); i++)
+	for (long unsigned int i = 0; i < messageHandler.deviceList.Devices.size(); i++)
 		if (messageHandler.deviceList.Devices[i].DeviceIndex == dev.deviceID)
 			return i;
 	return -1;
@@ -517,7 +535,6 @@ void Client::sensorRead(DeviceClass dev, int senIndex) {
 				req.sensorReadCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::SensorReadCmd);
 				req.sensorReadCmd.SensorIndex = senIndex;
 				req.sensorReadCmd.SensorType = el1.DeviceCmdAttributes[senIndex].SensorType;
-				int i = 0;
 				messageHandler.messageType = mhl::MessageTypes::SensorReadCmd;
 
 				json j = json::array({ messageHandler.handleClientRequest(req) });
@@ -543,7 +560,6 @@ void Client::sensorSubscribe(DeviceClass dev, int senIndex) {
 				req.sensorSubscribeCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::SensorSubscribeCmd);
 				req.sensorSubscribeCmd.SensorIndex = senIndex;
 				req.sensorSubscribeCmd.SensorType = el1.DeviceCmdAttributes[senIndex].SensorType;
-				int i = 0;
 				messageHandler.messageType = mhl::MessageTypes::SensorSubscribeCmd;
 
 				json j = json::array({ messageHandler.handleClientRequest(req) });
@@ -569,7 +585,6 @@ void Client::sensorUnsubscribe(DeviceClass dev, int senIndex) {
 				req.sensorUnsubscribeCmd.Id = static_cast<unsigned int>(mhl::MessageTypes::SensorUnsubscribeCmd);
 				req.sensorUnsubscribeCmd.SensorIndex = senIndex;
 				req.sensorUnsubscribeCmd.SensorType = el1.DeviceCmdAttributes[senIndex].SensorType;
-				int i = 0;
 				messageHandler.messageType = mhl::MessageTypes::SensorUnsubscribeCmd;
 
 				json j = json::array({ messageHandler.handleClientRequest(req) });
@@ -580,6 +595,13 @@ void Client::sensorUnsubscribe(DeviceClass dev, int senIndex) {
 			}
 		}
 	}
+}
+
+void Client::waitForEmptyConfirmQueue() {
+	// Wait until the queue is empty
+	std::unique_lock<std::mutex> lock{msgMx};
+	condQueue.wait(lock, [this]() { return messageHandler.q_sent.empty() && q.empty(); });
+	DEBUG_MSG("Queue is empty " << messageHandler.q_sent.size());
 }
 
 // Message handling function.
@@ -631,10 +653,53 @@ void Client::messageHandling() {
 			if (logging)
 				logInfo.logReceivedMessage(el.value().begin().key(), static_cast<unsigned int>(el.value().begin().value().at("Id")));
 
+			std::string messageType = el.value().begin().key();
+			if (!messageType.compare("Ok") || !messageType.compare("DeviceList")) {
+				// If the message is an "Ok" message, you can extract the ID and do something with it.
+				// For example, you can log it or check if it exists in your queue.
+				unsigned int id = static_cast<unsigned int>(el.value().begin().value().at("Id"));
+
+				// Use find_if to search for the pair with matching ID
+				auto it = std::find_if(messageHandler.q_sent.begin(), messageHandler.q_sent.end(),
+					[id](const std::pair<std::string, unsigned int>& pair) {
+						return pair.second == id;
+					});
+
+				if (it != messageHandler.q_sent.end()) {
+					// Found a matching entry
+					logInfo.logOkMessage(it->first, it->second);
+					// Optionally remove the entry from the queue
+					messageHandler.q_sent.erase(it);
+				}
+				condQueue.notify_all();
+			}
+			else if (!messageType.compare("Error")) {
+				// If the message is an "Error" message, you can extract the ID and do something with it.
+				unsigned int id = static_cast<unsigned int>(el.value().begin().value().at("Id"));
+				std::cout << "Error ID: " << id << std::endl;
+
+				// Use find_if to search for the pair with matching ID
+				auto it = std::find_if(messageHandler.q_sent.begin(), messageHandler.q_sent.end(),
+					[id](const std::pair<std::string, unsigned int>& pair) {
+						return pair.second == id;
+					});
+
+				if (it != messageHandler.q_sent.end()) {
+					// Found a matching entry
+					logInfo.logErrorMessage(it->first, it->second, el.value().begin().value().at("ErrorMessage"));
+					// Optionally remove the entry from the queue
+					messageHandler.q_sent.erase(it);
+				}
+				else {
+					logInfo.logErrorMessage("Unknown", id, el.value().begin().value().at("ErrorMessage"));
+					messageHandler.q_sent.clear();
+				}
+				condQueue.notify_all();
+			}
+
 			// Callback function for the user.
 			messageCallback(messageHandler);
 		}
-
 		lock.unlock();
 
 		DEBUG_MSG("[subscriber] Received " << value);

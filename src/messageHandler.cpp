@@ -101,6 +101,12 @@ namespace mhl {
 			j = req.sensorUnsubscribeCmd;
 			break;
 		}
+
+		std::cout << j.begin().key()<< std::endl;
+		if (j.begin().key().compare("RequestServerInfo")) {
+			q_sent.push_back(std::make_pair(j.begin().key(), j.begin().value().at("Id")));
+		}
+
 		return j;
 	}
 }

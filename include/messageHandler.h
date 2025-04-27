@@ -93,6 +93,8 @@ namespace mhl {
 		msg::DeviceRemoved deviceRemoved;
 		msg::SensorReading sensorReading;
 
+		std::vector<std::pair<std::string, unsigned int>> q_sent;
+
 		// Both server message and requests are handled in this class.
 		// Parses incoming JSON messages from server into appropriate classes
 		void handleServerMessage(json& msg);

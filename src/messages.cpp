@@ -116,8 +116,6 @@ namespace msg {
 		if (jTemp["Devices"].size() > 0) {
 			for (auto& el : jTemp["Devices"].items()) {
 				Device tempD;
-				//std::cout << el.value() << std::endl;
-				auto test = el.value().contains("DeviceMessageTimingGap");
 				if (el.value().contains("DeviceName")) tempD.DeviceName = el.value()["DeviceName"];
 
 				if (el.value().contains("DeviceIndex")) tempD.DeviceIndex = el.value()["DeviceIndex"];

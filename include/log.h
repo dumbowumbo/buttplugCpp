@@ -12,7 +12,7 @@
 struct LogEntry {
     std::chrono::system_clock::time_point timestamp;
     std::string messageType;
-    std::string direction; // "SENT" or "RECEIVED"
+    std::string direction; 
     unsigned int messageId;
 };
 
@@ -34,6 +34,8 @@ public:
     // Thread-safe methods to log sent and received messages
     void logSentMessage(const std::string& messageType, unsigned int messageId);
     void logReceivedMessage(const std::string& messageType, unsigned int messageId);
+    void logOkMessage(const std::string& messageType, unsigned int messageId);
+    void logErrorMessage(const std::string& messageType, unsigned int messageId, const std::string& errorMessage);
 
 private:
     // Background thread processing function that writes queued log entries to file

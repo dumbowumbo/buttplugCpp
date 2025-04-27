@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Options
-option(BUTTPLUG_BUILD_EXAMPLES "Build example applications" OFF)
-option(BUTTPLUG_DEBUG "Enable debug output" OFF)
+option(BUTTPLUG_BUILD_EXAMPLES "Build example applications" ON)
+option(BUTTPLUG_DEBUG "Enable debug output" ON)
 
 # Library sources
 set(BUTTPLUG_SOURCES
@@ -24,6 +24,7 @@ set(BUTTPLUG_HEADERS
     include/messageHandler.h
     include/messages.h
     include/helperClasses.h
+    include/thread_safe_queue.h
 )
 
 # Create library
@@ -65,7 +66,7 @@ endif()
 
 # Build examples if requested
 if(BUTTPLUG_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    add_subdirectory(example)
 endif()
 
 # Installation configuration

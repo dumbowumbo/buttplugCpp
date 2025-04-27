@@ -4,6 +4,6 @@
 #pragma once
 
 #include <iostream>
-#include <buttplug/buttplugclient.h>
+#include "buttplugclient.h"
 
 // TODO: Reference additional headers your program requires here.

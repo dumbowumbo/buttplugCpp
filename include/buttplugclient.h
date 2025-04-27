@@ -12,6 +12,7 @@
 #endif
 #include "messageHandler.h"
 #include "log.h"
+// #include "thread_safe_queue.hpp"
 
 // Alias for sensor reading class to make it more accessible
 typedef msg::SensorReading SensorClass;
@@ -96,6 +97,8 @@ public:
 	void sensorSubscribe(DeviceClass dev, int senIndex);
 	void sensorUnsubscribe(DeviceClass dev, int senIndex);
 
+	void waitForEmptyConfirmQueue();
+
 	// Mutex blocked function which grabs the currently connected devices and sensor reads.
 	std::vector<DeviceClass> getDevices();
 	SensorClass getSensors();
@@ -119,6 +122,7 @@ private:
 	std::queue<std::string> q;
 	// Condition variable to wait for received messages in the queue.
 	std::condition_variable cond;
+	std::condition_variable condQueue;
 	// Mutex to ensure no race conditions.
 	std::mutex msgMx;
 	// Callback function for when a message is received and handled.

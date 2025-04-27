@@ -68,6 +68,36 @@ void Logger::logReceivedMessage(const std::string& messageType, unsigned int mes
     queueCondition.notify_one();
 }
 
+void Logger::logOkMessage(const std::string& messageType, unsigned int messageId) {
+    LogEntry entry{
+        std::chrono::system_clock::now(),
+        messageType,
+        "OK CONFIRMED",
+        messageId
+    };
+    
+    {
+        std::lock_guard<std::mutex> lock(queueMutex);
+        logQueue.push(entry);
+    }
+    queueCondition.notify_one();
+}
+
+void Logger::logErrorMessage(const std::string& messageType, unsigned int messageId, const std::string& errorMessage) {
+    LogEntry entry{
+        std::chrono::system_clock::now(),
+        messageType,
+        "ERROR " + errorMessage,
+        messageId
+    };
+    
+    {
+        std::lock_guard<std::mutex> lock(queueMutex);
+        logQueue.push(entry);
+    }
+    queueCondition.notify_one();
+}
+
 void Logger::processLogQueue() {
     while (running) {
         LogEntry entry;

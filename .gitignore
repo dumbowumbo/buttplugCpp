@@ -39,3 +39,27 @@
 /Makefile
 /buttplugCpp
 /.vscode
+
+# CMake generated files
+ButtplugClientConfig.cmake
+ButtplugClientConfigVersion.cmake
+cmake_uninstall.cmake
+install_manifest.txt
+CMakeFiles/
+CMakePresets.json
+
+# Build logs
+*.log
+
+# Generated directories
+/Export/
+/pkgRedirects/
+
+# IDE settings
+.idea/
+*.swp
+*~
+
+example/cmake_install.cmake
+example/buttplugCpp
+example/Makefile

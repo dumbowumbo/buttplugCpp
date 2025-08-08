@@ -24,7 +24,6 @@ set(BUTTPLUG_HEADERS
     include/messageHandler.h
     include/messages.h
     include/helperClasses.h
-    include/thread_safe_queue.h
 )
 
 # Create library

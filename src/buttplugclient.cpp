@@ -125,7 +125,7 @@ void Client::connectServer() {
 
 	mhl::Requests req;
 	req.requestServerInfo.Id = static_cast<unsigned int>(mhl::MessageTypes::RequestServerInfo);
-	req.requestServerInfo.ClientName = "Testing";
+	req.requestServerInfo.ClientName = lName;
 	req.requestServerInfo.MessageVersion = 3;
 	messageHandler.messageType = mhl::MessageTypes::RequestServerInfo;
 

@@ -54,7 +54,7 @@ int main()
     
     // Create client and connect to the Buttplug server
     // The third parameter enables logging to a file with timestamp prefix
-    Client client(url, port, "test_log");
+    Client client("Example Client", url, port, "test_log");
     
     // Connect to the server and register our callback function
     client.connect(callbackFunction);

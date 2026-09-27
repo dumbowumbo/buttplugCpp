@@ -32,19 +32,21 @@ public:
 class Client {
 public:
 	// Constructor which initializes websockets for Windows. Add an IFDEF depending on compilation OS for portability.
-	Client(std::string url, unsigned int port) {
+	Client(std::string name, std::string url, unsigned int port) {
 		#ifdef _WIN32
 		ix::initNetSystem();
 		#endif
+	    lName = name;
 		lUrl = url;
 		lPort = port;
 	}
 	
 	// Constructor with logging capability
-	Client(std::string url, unsigned int port, std::string logfile) {
+	Client(std::string name, std::string url, unsigned int port, std::string logfile) {
 		#ifdef _WIN32
 		ix::initNetSystem();
 		#endif
+	    lName = name;
 		lUrl = url;
 		lPort = port;
 		if (!logfile.empty()) {
@@ -103,6 +105,9 @@ public:
 	std::vector<DeviceClass> getDevices();
 	SensorClass getSensors();
 private:
+    // Client name, used for UI/permissions
+    std::string lName;
+
 	// URL variables for the websocket.
 	std::string FullUrl;
 	std::string lUrl;

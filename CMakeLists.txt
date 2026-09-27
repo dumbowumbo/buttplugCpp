@@ -47,7 +47,7 @@ find_package(nlohmann_json REQUIRED)
 find_package(ixwebsocket REQUIRED)
 
 # Link dependencies
-if(MSVC)
+if(MSVC OR MINGW)
     target_link_libraries(buttplugclient
         PUBLIC
             nlohmann_json::nlohmann_json

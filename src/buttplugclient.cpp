@@ -1,7 +1,7 @@
 #include "../include/buttplugclient.h"
 
 // Connection function with a function parameter which acts as a callback.
-int Client::connect(void (*callFunc)(const mhl::Messages)) {
+int Client::connect(const std::function<void(const mhl::Messages&)> &callFunc) {
 	FullUrl = lUrl + ":" + std::to_string(lPort);
 
 	webSocket.setUrl(FullUrl);

@@ -69,7 +69,7 @@ public:
 	}
 
 	// Connects to the server and sets up the message handling callbacks
-	int connect(void (*callFunc)(const mhl::Messages));
+	int connect(const std::function<void(const mhl::Messages &)> &callFunc);
 	
 	// Atomic variables to store connection status. Can be accessed outside library too since atomic.
 	std::atomic<int> wsConnected{0};

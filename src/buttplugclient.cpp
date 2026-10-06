@@ -58,13 +58,16 @@ void Client::callbackFunction(const ix::WebSocketMessagePtr& msg) {
 
 	// Set atomic variable that websocket is connected once it is open.
 	if (msg->type == ix::WebSocketMessageType::Open) {
+	    std::lock_guard<std::mutex> lock{msgMx};
 		wsConnected = 1;
 		condWs.notify_all();
 	}
 	
 	// Set atomic variable that websocket is not connected if socket closes.
 	if (msg->type == ix::WebSocketMessageType::Close) {
+	    std::lock_guard<std::mutex> lock{msgMx};
 		wsConnected = 0;
+	    condWs.notify_all();
 	}
 }
 
